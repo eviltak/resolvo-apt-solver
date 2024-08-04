@@ -1,0 +1,22 @@
+[workspace]
+release_always = false
+
+[changelog]
+protect_breaking_commits = true
+
+commit_parsers = [
+    { message = "^feat", group = "Features" },
+    { message = "^deprecated", group = "Deprecated" },
+    { message = "^fix", group = "Bug Fixes" },
+    { message = "^change", group = "Internal Changes" },
+    { message = "^doc", group = "Documentation" },
+    { message = "^perf", group = "Performance" },
+    { message = "^refactor", group = "Refactors" },
+    { message = "^style", group = "Styling" },
+    { message = "^test", group = "Testing" },
+    { message = "^chore\\(license\\)", group = "Licensing" },
+    { message = "^ci|^chore", skip = true },
+    { body = ".*security", group = "Security" },
+    { message = "^revert", group = "Reverted" },
+    { message = "^.*", group = "Miscellaneous" },
+]
