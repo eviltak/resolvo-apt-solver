@@ -1,12 +1,14 @@
+use std::fmt::{Display, Write};
+
+use apt_edsp::scenario::{Package, Relation, Relationship, Scenario, Version};
 use resolvo::utils::{Pool, Range};
 use resolvo::{
     Candidates, Dependencies, DependencyProvider, Interner, KnownDependencies, Mapping, NameId,
     SolvableId, Solver, SolverCache, StringId, UnsolvableOrCancelled, VersionSetId,
 };
 
-use std::fmt::{Display, Write};
-
-use apt_edsp::scenario::{Package, Relation, Relationship, Scenario, Version};
+#[cfg(test)]
+mod tests;
 
 pub struct DebProvider<'s> {
     pool: Pool<Range<&'s Version>, &'s str>,
