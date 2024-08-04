@@ -1,0 +1,17 @@
+[package]
+name = "resolvo-apt-solver"
+version = "0.1.0"
+edition = "2021"
+
+authors = [
+    "Arav Singhal <singhal.arav@gmail.com>"
+]
+
+[dependencies]
+apt-edsp = "0.1.0"
+resolvo = "0.6.2"
+
+[dev-dependencies]
+indoc = "2"
+tracing-subscriber = "0.3.18"
+tracing = "0.1.40"
