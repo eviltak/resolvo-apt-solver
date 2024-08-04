@@ -6,8 +6,7 @@ use resolvo::{
 
 use std::fmt::{Display, Write};
 
-use apt_edsp::scenario::{Package, Relation, Relationship, Scenario};
-use apt_edsp::Version;
+use apt_edsp::scenario::{Package, Relation, Relationship, Scenario, Version};
 
 pub struct DebProvider<'s> {
     pool: Pool<Range<&'s Version>, &'s str>,
