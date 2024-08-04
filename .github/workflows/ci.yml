@@ -3,6 +3,7 @@ name: CI
 permissions:
   pull-requests: write
   contents: write
+  checks: write
 
 on:
   push:
