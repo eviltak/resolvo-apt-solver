@@ -7,7 +7,7 @@ protect_breaking_commits = true
 commit_parsers = [
     { message = "^feat", group = "Features" },
     { message = "^deprecated", group = "Deprecated" },
-    { message = "^fix", group = "Bug Fixes" },
+    { message = "^fix", group = "Bug Fixes and Improvements" },
     { message = "^change", group = "Internal Changes" },
     { message = "^doc", group = "Documentation" },
     { message = "^perf", group = "Performance" },
