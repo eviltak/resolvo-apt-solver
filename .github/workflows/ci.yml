@@ -63,6 +63,10 @@ jobs:
           token: ${{ steps.generate-token.outputs.token }}
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
+      - name: Install cargo-semver-checks
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-semver-checks
       # Call release first to create a release if we just merged a release PR
       - name: Run release-plz release
         uses: MarcoIeni/release-plz-action@v0.5
