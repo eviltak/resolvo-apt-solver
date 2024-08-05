@@ -6,7 +6,7 @@ license = "BSD-3-Clause"
 description = "An external dependency solver for APT backed by resolvo."
 repository = "https://github.com/eviltak/resolvo-apt-solver"
 readme = "README.md"
-exclude = [".github", ".idea", ".release-plz.toml"]
+exclude = [".github", ".idea", ".release-plz.toml", "commitlint.config.mjs"]
 authors = [
     "Arav Singhal <singhal.arav@gmail.com>"
 ]
