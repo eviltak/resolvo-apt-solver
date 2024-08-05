@@ -41,6 +41,8 @@ jobs:
           tool: cargo-rdme
       - name: Check if README is up to date
         run: cargo rdme --check
+      - name: Check commit messages
+        uses: wagoid/commitlint-github-action@v6
 
   release:
     name: Release
