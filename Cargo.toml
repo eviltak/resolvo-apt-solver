@@ -2,6 +2,10 @@
 name = "resolvo-apt-solver"
 version = "0.1.0"
 edition = "2021"
+license = "BSD-3-Clause"
+description = "An external dependency solver for APT backed by resolvo."
+repository = "https://github.com/eviltak/resolvo-apt-solver"
+readme = "README.md"
 exclude = [".github", ".idea", ".release-plz.toml"]
 authors = [
     "Arav Singhal <singhal.arav@gmail.com>"
