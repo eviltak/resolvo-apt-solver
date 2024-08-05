@@ -2,7 +2,7 @@
 name = "resolvo-apt-solver"
 version = "0.1.0"
 edition = "2021"
-
+exclude = [".github", ".idea", ".release-plz.toml"]
 authors = [
     "Arav Singhal <singhal.arav@gmail.com>"
 ]
