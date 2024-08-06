@@ -12,7 +12,7 @@ authors = [
 ]
 
 [dependencies]
-apt-edsp = "0.2.0"
+apt-edsp = "0.4.0"
 resolvo = "0.6.2"
 
 [dev-dependencies]

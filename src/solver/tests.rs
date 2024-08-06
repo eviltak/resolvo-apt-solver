@@ -1,6 +1,5 @@
 use apt_edsp::scenario::Scenario;
 use apt_edsp::Bool;
-use resolvo::{Interner, SolvableId, UnsolvableOrCancelled};
 
 use super::*;
 
@@ -40,46 +39,13 @@ macro_rules! package {
     };
 }
 
-fn transaction_to_string(interner: &impl Interner, solvables: &Vec<SolvableId>) -> String {
-    use std::fmt::Write;
-    let mut buf = String::new();
-    for solvable in solvables
-        .iter()
-        .copied()
-        .map(|s| interner.display_solvable(s))
-    {
-        writeln!(buf, "{solvable}").unwrap();
-    }
-
-    buf
-}
-
-fn solve_snapshot(scenario: &Scenario) -> String {
+fn solve_snapshot(scenario: &Scenario) -> Answer {
     let _ = tracing::subscriber::set_global_default(
         tracing_subscriber::fmt()
             .with_max_level(tracing::Level::TRACE)
             .finish(),
     );
-    let (result, solver) = solve(&scenario);
-    match result {
-        Ok(solvables) => transaction_to_string(solver.provider(), &solvables),
-        Err(UnsolvableOrCancelled::Unsolvable(problem)) => {
-            use std::io::Write;
-
-            // Write the problem graphviz to stderr
-            let graph = problem.graph(&solver);
-            let mut output = std::io::stderr();
-            writeln!(output, "UNSOLVABLE:").unwrap();
-            graph
-                .graphviz(&mut output, solver.provider(), true)
-                .unwrap();
-            writeln!(output, "\n").unwrap();
-
-            // Format a user friendly error message
-            problem.display_user_friendly(&solver).to_string()
-        }
-        Err(UnsolvableOrCancelled::Cancelled(reason)) => *reason.downcast().unwrap(),
-    }
+    solve(&scenario)
 }
 
 #[test]
@@ -94,7 +60,7 @@ fn simple() {
         ]
     };
 
-    println!("{}", solve_snapshot(&scenario));
+    println!("{:?}", solve_snapshot(&scenario));
 }
 
 #[test]
@@ -110,7 +76,7 @@ fn request_conflicts_with_installed() {
         ]
     };
 
-    println!("{}", solve_snapshot(&scenario));
+    println!("{:?}", solve_snapshot(&scenario));
 }
 
 #[test]
@@ -126,7 +92,7 @@ fn installed_conflicts_with_request() {
         ]
     };
 
-    println!("{}", solve_snapshot(&scenario));
+    println!("{:?}", solve_snapshot(&scenario));
 }
 
 #[test]
@@ -140,7 +106,7 @@ fn old_dependency_installed() {
         ]
     };
 
-    println!("{}", solve_snapshot(&scenario));
+    println!("{:?}", solve_snapshot(&scenario));
 }
 
 #[test]
@@ -154,7 +120,7 @@ fn installed_depends_on_older_version() {
         ]
     };
 
-    println!("{}", solve_snapshot(&scenario));
+    println!("{:?}", solve_snapshot(&scenario));
 }
 
 #[test]
@@ -168,7 +134,7 @@ fn dependency_needs_upgrade() {
         ]
     };
 
-    println!("{}", solve_snapshot(&scenario));
+    println!("{:?}", solve_snapshot(&scenario));
 }
 
 #[test]
@@ -185,5 +151,5 @@ fn remove() {
         ]
     };
 
-    println!("{}", solve_snapshot(&scenario));
+    println!("{:?}", solve_snapshot(&scenario));
 }

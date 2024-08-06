@@ -1,6 +1,7 @@
 use std::fmt::{Display, Write};
 
-use apt_edsp::scenario::{Package, Relation, Relationship, Scenario, Version};
+use apt_edsp::answer::{Answer, Error, Install};
+use apt_edsp::scenario::{Package, Relation, VersionSet, Scenario, Version};
 use resolvo::utils::{Pool, Range};
 use resolvo::{
     Candidates, Dependencies, DependencyProvider, Interner, KnownDependencies, Mapping, NameId,
@@ -45,10 +46,10 @@ impl<'s> DebProvider<'s> {
         }
     }
 
-    fn intern_relationship_as_version_set(&self, relationship: &'s Relationship) -> VersionSetId {
+    fn intern_edsp_version_set(&self, version_set: &'s VersionSet) -> VersionSetId {
         self.intern_version_set(
-            &*relationship.package,
-            constraint_to_version_set(&relationship.constraint),
+            &*version_set.package,
+            constraint_to_version_set(&version_set.constraint),
         )
     }
 
@@ -161,7 +162,7 @@ impl<'s> DependencyProvider for DebProvider<'s> {
             .depends
             .iter()
             // TODO: Handle alternate dependencies (will likely require a resolvo change)
-            .map(|dep| self.intern_relationship_as_version_set(&dep.first))
+            .map(|dep| self.intern_edsp_version_set(&dep.first))
             .collect();
 
         // Specify conflicts by constraining to complement of conflicting set
@@ -197,12 +198,7 @@ fn constraint_to_version_set(constraint: &Option<(Relation, Version)>) -> Range<
     }
 }
 
-pub fn solve(
-    scenario: &Scenario,
-) -> (
-    Result<Vec<SolvableId>, UnsolvableOrCancelled>,
-    Solver<DebProvider>,
-) {
+pub fn solve(scenario: &Scenario) -> Answer {
     let provider = DebProvider::new(scenario);
 
     // TODO: Handle Autoremove, Upgrade-All Forbid-Remove and Forbid-New-Install
@@ -237,5 +233,37 @@ pub fn solve(
     // TODO: Use installed packages as soft requirements
     let result = solver.solve(requirements, constraints);
 
-    (result, solver)
+    // TODO: Return Autoremove
+    match result {
+        Ok(solvables) => {
+            let actions = solvables
+                .into_iter()
+                .filter_map(|solvable| solver.provider().packages.get(solvable))
+                .map(|package| Install {
+                    install: package.id.clone(),
+                    package: Some(package.package.clone()),
+                    version: Some(package.version.clone()),
+                    architecture: Some(package.architecture.clone()),
+                    ..Default::default()
+                }.into());
+
+            // TODO: Compare to installed_packages and add Remove actions
+
+            Answer::Solution(actions.collect())
+        }
+        Err(UnsolvableOrCancelled::Unsolvable(problem)) => {
+            let error = Error {
+                error: "resolvo-apt-solver-unsolvable".into(),
+                message: problem.display_user_friendly(&solver).to_string(),
+            };
+            Answer::Error(error)
+        }
+        Err(UnsolvableOrCancelled::Cancelled(reason)) => {
+            let error = Error {
+                error: "resolvo-apt-solver-cancelled".into(),
+                message: *reason.downcast().unwrap(),
+            };
+            Answer::Error(error)
+        }
+    }
 }

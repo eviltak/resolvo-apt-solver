@@ -17,13 +17,14 @@ dependencies = [
 
 [[package]]
 name = "apt-edsp"
-version = "0.2.0"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "544ff421999bf8df0c75b0afe7d35d603673836278f16503ae9802d2c7a8d021"
+checksum = "182864aa44996df5e71d2cecdd7c8e417cbe1d2cba79085ab7340a08a577b7c7"
 dependencies = [
  "nom",
  "rfc822-like",
  "serde",
+ "thiserror",
 ]
 
 [[package]]
