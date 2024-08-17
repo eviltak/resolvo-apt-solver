@@ -50,7 +50,7 @@ impl<'s> DebProvider<'s> {
 
     fn intern_edsp_version_set(&self, version_set: &'s VersionSet) -> VersionSetId {
         self.intern_version_set(
-            &*version_set.package,
+            &version_set.package,
             constraint_to_version_set(&version_set.constraint),
         )
     }
@@ -126,7 +126,7 @@ impl<'s> DependencyProvider for DebProvider<'s> {
         candidates
             .iter()
             .copied()
-            .filter(|s| range.contains(&self.pool.resolve_solvable(*s).record) == !inverse)
+            .filter(|s| range.contains(&self.pool.resolve_solvable(*s).record) != inverse)
             .collect()
     }
 
@@ -156,7 +156,7 @@ impl<'s> DependencyProvider for DebProvider<'s> {
             let a = self.pool.resolve_solvable(*a).record;
             let b = self.pool.resolve_solvable(*b).record;
             // TODO: Consider pin priority
-            b.cmp(&a)
+            b.cmp(a)
         });
     }
 
@@ -195,7 +195,7 @@ impl<'s> DependencyProvider for DebProvider<'s> {
             .iter()
             .map(|rel| {
                 self.intern_version_set(
-                    &*rel.package,
+                    &rel.package,
                     constraint_to_version_set(&rel.constraint).complement(),
                 )
             })
