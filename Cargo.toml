@@ -13,7 +13,7 @@ authors = [
 
 [dependencies]
 apt-edsp = "0.4.0"
-resolvo = "0.6.2"
+resolvo = "0.7.0"
 
 [dev-dependencies]
 indoc = "2"

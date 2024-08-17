@@ -1,11 +1,13 @@
+use std::collections::HashSet;
 use std::fmt::{Display, Write};
 
-use apt_edsp::answer::{Answer, Error, Install};
-use apt_edsp::scenario::{Package, Relation, VersionSet, Scenario, Version};
+use apt_edsp::answer::{Answer, Error, Install, Remove};
+use apt_edsp::scenario::{Package, Relation, Scenario, Version, VersionSet};
 use resolvo::utils::{Pool, Range};
 use resolvo::{
     Candidates, Dependencies, DependencyProvider, Interner, KnownDependencies, Mapping, NameId,
-    SolvableId, Solver, SolverCache, StringId, UnsolvableOrCancelled, VersionSetId,
+    Problem, SolvableId, Solver, SolverCache, StringId, UnsolvableOrCancelled, VersionSetId,
+    VersionSetUnionId,
 };
 
 #[cfg(test)]
@@ -104,6 +106,13 @@ impl<'s> Interner for DebProvider<'s> {
     fn solvable_name(&self, solvable: SolvableId) -> NameId {
         self.pool.resolve_solvable(solvable).name
     }
+
+    fn version_sets_in_union(
+        &self,
+        version_set_union: VersionSetUnionId,
+    ) -> impl Iterator<Item = VersionSetId> {
+        self.pool.resolve_version_set_union(version_set_union)
+    }
 }
 
 impl<'s> DependencyProvider for DebProvider<'s> {
@@ -161,8 +170,22 @@ impl<'s> DependencyProvider for DebProvider<'s> {
         let requirements = package
             .depends
             .iter()
-            // TODO: Handle alternate dependencies (will likely require a resolvo change)
-            .map(|dep| self.intern_edsp_version_set(&dep.first))
+            .map(|dep| {
+                let first_version_set = self.intern_edsp_version_set(&dep.first);
+
+                if dep.alternates.is_empty() {
+                    first_version_set.into()
+                } else {
+                    let other_version_sets = dep
+                        .alternates
+                        .iter()
+                        .map(|vs| self.intern_edsp_version_set(vs));
+
+                    self.pool
+                        .intern_version_set_union(first_version_set, other_version_sets)
+                        .into()
+                }
+            })
             .collect();
 
         // Specify conflicts by constraining to complement of conflicting set
@@ -209,7 +232,7 @@ pub fn solve(scenario: &Scenario) -> Answer {
         .as_deref()
         .unwrap_or("")
         .split_ascii_whitespace()
-        .map(|package| provider.intern_version_set(package, Range::full()))
+        .map(|package| provider.intern_version_set(package, Range::full()).into())
         .collect();
 
     let constraints = scenario
@@ -230,26 +253,58 @@ pub fn solve(scenario: &Scenario) -> Answer {
         .collect::<Vec<_>>();
 
     let mut solver = Solver::new(provider);
-    // TODO: Use installed packages as soft requirements
-    let result = solver.solve(requirements, constraints);
+    let problem = Problem {
+        requirements,
+        constraints,
+        soft_requirements: installed_packages.clone(),
+    };
+    let result = solver.solve(problem);
 
-    // TODO: Return Autoremove
     match result {
         Ok(solvables) => {
-            let actions = solvables
+            let solvable_names: HashSet<_> = solvables
+                .iter()
+                .map(|&solvable| solver.provider().solvable_name(solvable))
+                .collect();
+
+            let install_actions = solvables
                 .into_iter()
                 .filter_map(|solvable| solver.provider().packages.get(solvable))
-                .map(|package| Install {
-                    install: package.id.clone(),
-                    package: Some(package.package.clone()),
-                    version: Some(package.version.clone()),
-                    architecture: Some(package.architecture.clone()),
-                    ..Default::default()
-                }.into());
+                .filter(|package| !package.installed.0)
+                .map(|package| {
+                    Install {
+                        install: package.id.clone(),
+                        package: Some(package.package.clone()),
+                        version: Some(package.version.clone()),
+                        architecture: Some(package.architecture.clone()),
+                        ..Default::default()
+                    }
+                    .into()
+                });
 
-            // TODO: Compare to installed_packages and add Remove actions
+            let remove_actions = installed_packages
+                .iter()
+                .copied()
+                .filter(|&solvable| {
+                    !solvable_names.contains(&solver.provider().solvable_name(solvable))
+                })
+                .filter_map(|solvable| solver.provider().packages.get(solvable))
+                .map(|package| {
+                    Remove {
+                        remove: package.id.clone(),
+                        package: Some(package.package.clone()),
+                        version: Some(package.version.clone()),
+                        architecture: Some(package.architecture.clone()),
+                        ..Default::default()
+                    }
+                    .into()
+                });
 
-            Answer::Solution(actions.collect())
+            // TODO: Return Autoremove for all automatic installed solvables
+            // that do not have a depending package in solution
+            // Return Remove for them if autoremove is requested
+
+            Answer::Solution(install_actions.chain(remove_actions).collect())
         }
         Err(UnsolvableOrCancelled::Unsolvable(problem)) => {
             let error = Error {
