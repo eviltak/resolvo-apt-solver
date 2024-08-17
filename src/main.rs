@@ -2,3 +2,5 @@
 //!
 //! [APT]: https://en.wikipedia.org/wiki/APT_(software)
 pub mod solver;
+
+fn main() {}
